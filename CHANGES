@@ -1,0 +1,26 @@
+CHANGES
+
+0.4
+- code clearings
+- santa moves with storm
+- renamed jsSnow_<version>.js to jsSnow.js
+
+0.3
+- works with Opera
+- added storm
+- cleanups
+- better flake movement
+- better initialisation code
+- configuration options for storm & flakes added
+
+0.2
+- bugfix in DHTML code for Netscae 6 (submitted by Xavier LOUP)
+  obj.style.XXX = POS;   --->   obj.style.XXX = POS + "px";
+- flake-code changed, new global variable flake_TX, defines max.
+  time in seconds of flake's x-movement.
+- flake_speed init code changed.
+- config option + code cleanup (INOUE Hiroyuki)
+
+0.1
+
+- initial release.

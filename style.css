@@ -1,0 +1,13 @@
+body {
+	font-family: "Trebuchet Ms", Verdana, sans-serif;
+	font-weight: normal;
+	font-size: 10pt;
+	margin: 30px;
+	color: #c0c0c0;
+	background-color: #515170;
+}
+a			{ color:#ffffff; text-decoration:none; font-weight:bold; }
+a:link		{ color:#ffffff; }
+a:visited	{ color:#ffffff; }
+a:active	{ color:#ffffff; }
+a:hover		{ color:#ffffff; }

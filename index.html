@@ -1,0 +1,47 @@
+<html>
+<head>
+	<title>Snow in your Browser</title>
+	<style>
+body { 
+background-color: #333;
+color: white;
+}
+#snow {
+	display: block;
+	width: 400px;
+	height: 200px;
+	border: 1px solid black;
+	margin: 0 auto;
+	background: #ddd;
+	color: black;
+	text-align: center;
+	vertical-align: middle;
+	font-size: 50px;
+	border: 4px outset grey;
+}
+#snow:hover {
+	border: 4px inset grey;
+}
+	</style>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-3429056-2']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</head>
+<body>
+	<p>Drag the following to your bookmark bar: <a id="snow" href="javascript:(function(){s=document.createElement('script');s.type='text/javascript';s.src='http://www.roguelazer.com/snow/jsSnow.js';document.body.appendChild(s);})();" title="Make it snow">make it snow</a> It works best on dark pages.</p>
+	<p>For this to work, you must be able to see three snowflake characters immediately following this colon: &#10052; &#10053; &#10054;</p>
+	<p>This is based off of <a href="http://freshmeat.net/projects/jssnow/">jsSnow</a>. It is licensed under the GNU General Public License. No warranty is implied. Blah blah. Make it snow!</p>
+	<p>Props to Alice and Richard for helping me beta test.</p>
+	<p><a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-via="Roguelazer">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script></a>
+</body>
+</html>

@@ -24,6 +24,10 @@
 */
 //---------------------------------------------------------------------------------------
 
+var undefined;
+
+if (snowEnabled === undefined) {
+
 window.onerror = null;
 
 var pageWidth  = 0;						// page dimension & visible offset
@@ -95,6 +99,7 @@ var flakeSX  = new Array(flakes);
 var flakeVX  = new Array(flakes);
 var flakeVY	 = new Array(flakes);
 var flakeVIS = new Array(flakes);
+var flakeEnabled = new Array(flakes);
 var flakeDX  = 0;			// X-movement in pixel/frame, caused by storm
 var flakeDY  = 0;			// Y-movement in pixel/frame, caused by storm
 
@@ -108,6 +113,8 @@ var flake_visible = 0;		// start with visble flakes for Opera, all others start 
 var flake_id	  = 0;		// timer id of make_flake_visible
 
 var scrollbarWidth = 20; 	// too lazy to actually determine this
+
+var snowEnabled = -1;
 
 //-------------------------------------------------------------------------
 // preload images
@@ -274,7 +281,8 @@ function move_snow_and_santa() {
 // santa's private movement
 //-------------------------------------------------------------------------
 function move_santa() {
-	var lmgn = -pageWidth*(1-santa_appearance)/santa_appearance;
+	var santa_e_appearance = snowEnabled * santa_appearance;
+	var lmgn = -pageWidth*(1-santa_e_appearance)/santa_appearance;
 	var rmgn = pageWidth;
 	var h    = pageHeight+santa_image.height;
 
@@ -320,11 +328,19 @@ function move_snow() {
 		var fs = flakeSize[i] * 2;
 		var sb = (pageHeight < document.body.offsetHeight) ? scrollbarWidth : 0;
 		if (flakeY[i]>(pageHeight-fs)) {
-			flakeX[i]  = Math.random()*pageWidth;
-			flakeY[i]  = 0;
-			flakeVY[i] = flake_speed+Math.random()*flake_speed;
-			if (Math.random()<0.1) flakeVY[i] *= 2.0;
-			if (flake_visible) flakeVIS[i] = true;
+			if (snowEnabled) {
+				flakeX[i]  = Math.random()*pageWidth;
+				flakeY[i]  = 0;
+				flakeVY[i] = flake_speed+Math.random()*flake_speed;
+				if (Math.random()<0.1) flakeVY[i] *= 2.0;
+				if (flake_visible) flakeVIS[i] = true;
+				flakeEnabled[i] = 1;
+			} else {
+				flakeEnabled[i] = 0;
+				flakeVIS[i] = false;
+				flakeY[i] = 0;
+				flakeX[i] = 0;
+			}
 		}
 
 		// left-right- movement
@@ -375,6 +391,11 @@ function get_page_dimension() {
 // initialize all objects & timer
 //-------------------------------------------------------------------------
 function startSnow() {
+	if (snowEnabled !== -1) {
+		snowEnabled = 1;
+		return;
+	}
+	snowEnabled = 1;
 	sty = document.createElement("link");
 	sty.href="http://www.roguelazer.com/snow/jsSnow.css"
 	sty.type="text/css";
@@ -416,6 +437,12 @@ function startSnow() {
 	timer_id = window.setInterval(move_snow_and_santa,refresh);
 	storm_id = window.setInterval(storm_proc,1800);					// init with visible storm
 	flake_id = window.setInterval(make_flake_visible_proc,2000);	// after the storm, let snowflakes fall :-)
+}
+
+function stopSnow() {
+	snowEnabled = 0;
+}
+
 }
 
 startSnow();

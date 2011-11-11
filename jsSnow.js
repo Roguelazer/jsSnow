@@ -37,7 +37,7 @@ var pageOffY   = 0;
 
 
 // <---- Customizable part ----
-var santaImageDir	= 'http://www.roguelazer.com/snow/';				// relative path for Santa images
+var santaImageDir	= '//www.roguelazer.com/snow/';				// relative path for Santa images
 var santaSize  = '2';                   // 1, 2 or 3 (smaller number specifies smaller image)
 
 var flakes = 100;						// total number of snowflakes
@@ -397,7 +397,7 @@ function startSnow() {
 	}
 	snowEnabled = 1;
 	sty = document.createElement("link");
-	sty.href="http://www.roguelazer.com/snow/jsSnow.css"
+	sty.href="//www.roguelazer.com/snow/jsSnow.css"
 	sty.type="text/css";
 	sty.rel="StyleSheet";
 	document.getElementsByTagName('head')[0].appendChild(sty);

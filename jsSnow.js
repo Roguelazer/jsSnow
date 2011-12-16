@@ -221,8 +221,9 @@ function init_snow_and_santa() {
 function init_flake(i) {
     flakeX[i]       = Math.random()*pageWidth;
     flakeY[i]       = Math.random()*pageHeight - pageHeight;
-    flakeVY[i]      = (flakeSize[i]/kMaxFlakeSize)*0.25;
-    flakeVX[i]      = Math.random()*0.1 - 0.1;
+    flakeVY[i]      = (flakeSize[i]/kMaxFlakeSize)*0.15;
+    flakeVX[i]      = (flakeSize[i]/kMaxFlakeSize)*0.05;
+    flakeVX[i]      = (flakeVX[i]/2) - (flakeVX[i]);
     flakeEnabled[i] = 1;
 }
 

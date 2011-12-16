@@ -37,10 +37,12 @@ var pageOffY   = 0;
 
 
 // <---- Customizable part ----
-var santaImageDir	= '//www.roguelazer.com/snow/';				// relative path for Santa images
+var santaImageDir = '//www.roguelazer.com/snow/';
+var flakeImageDir = santaImageDir;
 var santaSize  = '2';                   // 1, 2 or 3 (smaller number specifies smaller image)
 
 var flakes = 100;						// total number of snowflakes
+var small_flakes = 400;
 var santa_mass = 5;                     // santa's effective mass during storms
                                         //   specified as the ratio to snow flakes
                                         //   exept 0, which means santa won't be pushed by storms
@@ -51,7 +53,7 @@ var storm_speed_PperS = 300;			// storm speed in pixel/second
 var santa_init_x	 = -256;			// santa's initial X-position
 var santa_direction  = 0;				// santa's movement direction in degree
 										//   (between [0:360]; default is (1,0), 90 is to go up )
-var santa_appearance = 0.15;			// probability between [0:1] for santa to be shown
+var santa_appearance = 0.025;			// probability between [0:1] for santa to be shown
 
 var flake_TX          = 1.0;            // max. sec. of flake's constant X-movement on fluttering
 var flake_XperY		  = 2.0;			// fluttering movement's max. vx/vy ratio
@@ -64,49 +66,31 @@ var storm_YperX       = 1/3.0;			// storm's max. vy/vx ratio
 
 var santa_width = 112;
 var santa_height = 16;
+var santa_speed = 0.15;
 // ---- Customizable part ---->
 
-
-var refresh_FperS = 20;					// initial frames/second, recalculated.
-var refresh 	  = 1000/refresh_FperS;	// ms/frame
-
-var santa_speed 	= 0;				// santa speed in pixel/frame
-var flake_speed 	= 0;				// flake speed in pixel/frame
-var storm_speed 	= 0;				// storm speed in pixel/frame
-var storm_YperX_current = storm_YperX;  // storm direction varies each time
-var storm_v_sin     = 0;                // storm speed's sine
-var storm_v_cos     = 1;                // storm speed's cosine
-var storm_direction = 0;				// storm X-direction, -1/0=quiet/+1
-var storm_id    	= 0;				// ID of storm timer
-
-var storm_blowing	= 1;				// start with storm=ON
-
 var santa;
+var santaEnabled = 0;
 var santaX	= 0;			// X-position of santa
 var santaY	= 0;			// Y-position of santa
-var santaSY = 0;			// frames till Y-movement changes
-var santaVY = 0;			// variant Y-movement in pixel/frame
-var santaMX = 1;			// steady movement's X-ratio
-var santaMY = 0;			// steady movement's Y-ratio
-var santaDX = 0;			// X-movement in pixel/frame, caused by storm
-var santaDY = 0;			// Y-movement in pixel/frame, caused by storm
+var santaDX = 0;
+var santaDY = 0;
 
-var flake    = new Array(flakes);
-var flakeSize= new Array(flakes);
-var flakeX   = new Array(flakes);
-var flakeY   = new Array(flakes);
-var flakeSX  = new Array(flakes);
-var flakeVX  = new Array(flakes);
-var flakeVY	 = new Array(flakes);
-var flakeVIS = new Array(flakes);
-var flakeEnabled = new Array(flakes);
+var flake    = new Array(flakes+small_flakes);
+var flakeImg = new Array(flakes+small_flakes);
+var flakeSize= new Array(flakes+small_flakes);
+var flakeX   = new Array(flakes+small_flakes);
+var flakeY   = new Array(flakes+small_flakes);
+var flakeVX  = new Array(flakes+small_flakes);
+var flakeVY	 = new Array(flakes+small_flakes);
+var flakeVIS = new Array(flakes+small_flakes);
+var flakeEnabled = new Array(flakes+small_flakes);
 var flakeDX  = 0;			// X-movement in pixel/frame, caused by storm
 var flakeDY  = 0;			// Y-movement in pixel/frame, caused by storm
 
 
 
 var timer_id    = 0;		// ID if timer proc.
-var timer_sum   = refresh;	// Inital values for speed calculation
 var timer_count = 1;		// --''--
 
 var flake_visible = 0;		// start with visble flakes for Opera, all others start invisible
@@ -116,61 +100,37 @@ var scrollbarWidth = 20; 	// too lazy to actually determine this
 
 var snowEnabled = -1;
 
+var kMaxFlakeSize=16;
+var kMaxSmallFlakeSize=8;
+
+window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       || 
+              window.webkitRequestAnimationFrame || 
+              window.mozRequestAnimationFrame    || 
+              window.oRequestAnimationFrame      || 
+              window.msRequestAnimationFrame     || 
+              function( callback ) {
+                  window.setTimeout(callback, 1000 / 60);
+                };
+})();
+
 //-------------------------------------------------------------------------
 // preload images
 //-------------------------------------------------------------------------
 var kFlakeImages = 3;
 var flake_images = new Array(kFlakeImages);
-flake_images[0] = "&#10052;";
-flake_images[1] = "&#10053;";
-flake_images[2] = "&#10054;";
+for (var i = 0; i < kFlakeImages; ++i) {
+    flake_images[i] = new Image();
+    flake_images[i].src = flakeImageDir+'snow'+((i+1).toString())+'.png';
+}
+small_flake = new Image();
+small_flake.src = flakeImageDir+'small_snow.png';
 var santa_image = new Image();
 santa_image.src = santaImageDir+'sleigh'+santaSize+'.gif';
 
 
-
-//-------------------------------------------------------------------------
-// calculates optimum framerate & corresponding speed
-//-------------------------------------------------------------------------
-function rebuild_speed_and_timer() {
-	var old = refresh_FperS;
-	refresh = Math.floor(timer_sum/timer_count*2)+10;	// ms/Frame + spare
-	// cap out at 60fps
-	refresh = refresh < (1 / 60) ? (1/60) : refresh;
-	refresh_FperS = Math.floor(1000/refresh);			// frames/second
-
-	santa_speed = santa_speed_PperS/refresh_FperS;		// pixel/second  --> pixel/frame
-	flake_speed = flake_speed_PperS/refresh_FperS;		// pixel/second  --> pixel/frame
-	storm_speed = storm_speed_PperS/refresh_FperS; 		// pixel/second  --> pixel/frame
-
-	if (timer_id) window.clearInterval(timer_id);		// adapt timer
-	timer_id = window.setInterval(move_snow_and_santa,refresh);
-
-	// adapt speed - for smoothness
-	if (old != refresh_FperS) {
-		var ratio = old/refresh_FperS;
-		santaVY *= ratio;
-		for (i=0; i<flakes; i++) {
-			flakeSX[i] *= ratio;
-			flakeVX[i] *= ratio;
-			flakeVY[i] *= ratio;
-		}
-	}
-
-	timer_count /= 2;	// moving medium
-	timer_sum   /= 2;
-}
-
-
-
-//-------------------------------------------------------------------------
-// make flakes visible: while initalialisation phase flakes are invisble.
-//						after make_flakes_visible, all new flakes start visible
-//-------------------------------------------------------------------------
-function make_flake_visible_proc() {
-	window.clearInterval(flake_id);
-	flake_visible = true;
-}
+var kRotateStyles = 8;
+var kFallStyles = 3;
 
 
 //-------------------------------------------------------------------------
@@ -217,47 +177,54 @@ function storm_proc() {
 }
 
 
-
-
 //-------------------------------------------------------------------------
 // create all layers & Objects
 //-------------------------------------------------------------------------
 function init_snow_and_santa() {
 	// create santa
-	santa   = get_layer_by_name('santa0');
+	santa   = $('#santa0');
 	santaX  = santa_init_x;
 	santaY  = Math.random()*pageHeight;
-	santaSY = 0;
 
 	if (santa_direction != 0) {
 		santaMX =  Math.cos(santa_direction/180*Math.PI);
 		santaMY = -Math.sin(santa_direction/180*Math.PI);
 	}
+    santa.css("z-index", kMaxFlakeSize - 2);
 
 	// create flake
 	for (var i=0; i<flakes; i++) {
-		flake[i]    = get_layer_by_name('flake'+i);
-		flakeSize[i] = (Math.floor(Math.random()*10) + 8);
-		flake[i].style.fontSize = flakeSize[i] + "px";
-		flakeX[i]   = Math.random()*pageWidth;
-		flakeY[i]   = Math.random()*pageHeight;
-		flakeSX[i]  = 0;
-		flakeVX[i]  = 0;
+		flake[i]    = $("#flake"+(i.toString()));
+        flakeImg[i] = $("#flake"+(i.toString())+" img");
+        flakeSize[i] = Math.floor(kMaxFlakeSize - Math.random()*(kMaxFlakeSize*0.5));
+        flake[i].css("z-index", flakeSize[i]);
+        flakeImg[i].width(flakeSize[i] + "px");
+        flakeImg[i].height(flakeSize[i] + "px");
+        if (flakeSize[i] >= (kMaxFlakeSize + 2)) {
+            flakeImg[i].addClass("snowflake-animation-" + Math.floor(Math.random()*kRotateStyles).toString());
+        }
+        init_flake(i);
 		flakeVIS[i] = flake_visible;
-		flakeVY[i]  = 1;
 	}
+    for (var i=flakes; i<(flakes+small_flakes); ++i) {
+		flake[i]    = $("#flake"+(i.toString()));
+        flakeImg[i] = $("#flake"+(i.toString())+" img");
+        flakeSize[i] = Math.floor(kMaxSmallFlakeSize - Math.random()*(kMaxSmallFlakeSize*0.5));
+        flake[i].css("z-index", flakeSize[i]);
+        flakeImg[i].width(flakeSize[i] + "px");
+        flakeImg[i].height(flakeSize[i] + "px");
+        init_flake(i);
+		flakeVIS[i] = flake_visible;
+    }
 }
 
-
-
-//-------------------------------------------------------------------------
-// get the named layer
-//-------------------------------------------------------------------------
-function get_layer_by_name(id) {
-	return document.getElementById(id);
+function init_flake(i) {
+    flakeX[i]       = Math.random()*pageWidth;
+    flakeY[i]       = Math.random()*pageHeight - pageHeight;
+    flakeVY[i]      = (flakeSize[i]/kMaxFlakeSize)*0.25;
+    flakeVX[i]      = Math.random()*0.1 - 0.1;
+    flakeEnabled[i] = 1;
 }
-
-
 
 
 //-------------------------------------------------------------------------
@@ -290,12 +257,10 @@ function move_santa() {
 	if (santaX > rmgn) {
 		santaX  = lmgn;
 		santaY  = Math.random()*pageHeight;
-		santaSY = 0;
 		santaVY = 0;
 	} else if (santaX < lmgn) {
 		santaX  = rmgn;
 		santaY  = Math.random()*pageHeight;
-		santaSY = 0;
 		santaVY = 0;
 	} else if (santaY >= pageHeight) {
 		santaY -= h;
@@ -307,7 +272,6 @@ function move_santa() {
  	}
 
 	// up-down-movement
-	santaSY --;
 	if (santaSY <= 0) {
 		santaSY = Math.random()*refresh_FperS*santa_TY;
 		santaVY = (2.0*Math.random()-1.0)*santa_YperX*santa_speed;
@@ -315,13 +279,15 @@ function move_santa() {
 
 	// move santa to new position
 	move_to(santa,santaX,santaY,(santaY<pageHeight-santa_height && santaX<pageWidth-santa_width));
+    console.log("incrementing time by " + time_increment);
 }
 
 //-------------------------------------------------------------------------
 // snowflake's private movement
 //-------------------------------------------------------------------------
+
 function move_snow() {
-	for (var i=0; i<flakes; i++) {
+	for (var i=0; i<(flakes+small_flakes); i++) {
 		// flake outside screen ?
 		flakeX[i] += flakeVX[i] + flakeDX;
 		flakeY[i] += flakeVY[i] + flakeDY;
@@ -360,19 +326,58 @@ function move_snow() {
 	}
 }
 
+var animationStartTime = Date.now();
 
-
-//-------------------------------------------------------------------------
-// move a layer
-//-------------------------------------------------------------------------
-function move_to(obj, x, y, visible) {
-	if (visible) {
-		obj.style.left 		= x+"px";
-		obj.style.top		= y+"px";
-		obj.style.display 	= "block";
-	} else {
-		obj.style.display 	= "none";
-	}
+function animate(time) {
+    var time_increment = time - animationStartTime;
+    var sb = (pageHeight < document.body.offsetHeight) ? scrollbarWidth : 0;
+    for (var i = 0; i < (flakes+small_flakes); i++) {
+		var fs = flakeSize[i] * 3;
+        flakeX[i] += flakeVX[i]*time_increment;
+        flakeY[i] += flakeVY[i]*time_increment;
+		if (flakeX[i]<fs) {
+		    flakeX[i] += pageWidth - sb;
+        }
+		if (flakeX[i]>=(pageWidth-fs-sb)) {
+			flakeX[i] -= pageWidth-sb;
+        }
+		if (flakeY[i]>=(pageHeight-fs*1.5)) {
+            if (snowEnabled) {
+                init_flake(i);
+            } else {
+                flakeEnabled[i] = 0;
+            }
+        }
+        if (!flakeEnabled[i]) {
+            flake[i].hide();
+        } else {
+            flake[i].show();
+        }
+        flake[i].css("left", flakeX[i]+"px");
+        flake[i].css("top", flakeY[i]+"px");
+    }
+    if (santaEnabled) {
+        if ((santaX>=(pageWidth-santa_width-sb)) || (santaY >= pageHeight - santa_height)) {
+            santaEnabled = 0;
+            santaX = santa_init_x;
+            santaY = Math.random()*pageHeight;
+        } else {
+            santaX += santaDX*time_increment;
+            santaY += santaDY*time_increment;
+        }
+        santa.css("left", santaX);
+        santa.css("top", santaY);
+    } else {
+        santa.hide();
+        if (Math.random() > santa_appearance) {
+            santaEnabled = 1;
+            santaDX = santa_speed + (Math.random()*0.25*santa_speed - 0.25*santa_speed);
+            santaDX = 0.25*santa_speed + (Math.random()*0.1*santa_speed - 0.1*santa_speed);
+            santa.show()
+        }
+    }
+    animationStartTime = Date.now();
+    requestAnimFrame(animate);
 }
 
 
@@ -397,7 +402,7 @@ function startSnow() {
 	}
 	snowEnabled = 1;
 	sty = document.createElement("link");
-	sty.href="//www.roguelazer.com/snow/jsSnow.css"
+	sty.href=flakeImageDir+'jsSnow.css';
 	sty.type="text/css";
 	sty.rel="StyleSheet";
 	document.getElementsByTagName('head')[0].appendChild(sty);
@@ -406,7 +411,6 @@ function startSnow() {
 	a.style.position = "absolute";
 	a.style.left = "-1px";
 	a.style.top = "-1px";
-	a.style.zindex = 10;
 	a.style.display = "block";
 	im = document.createElement("img");
 	im.src=santa_image.src;
@@ -417,11 +421,22 @@ function startSnow() {
 	for (var i=0; i<flakes; i++) {
 		a = document.createElement("div");
 		a.id = "flake" + i;
-		a.className += "snowflake";
-		a.style.display = "block";
-		a.innerHTML = flake_images[i % kFlakeImages];
-		document.body.appendChild(a);
+        ah = $(a);
+        ah.css("display", "block");
+        ah.append("<img src=" + flake_images[i % kFlakeImages].src + " />");
+        ah.addClass("snowflake");
+        aih = $(ah.children()[0]);
+        $('body').append(ah);
 	}
+    for (var i = 0; i < small_flakes; i++) {
+		a = document.createElement("div");
+		a.id = "flake" + (flakes + i);
+        ah = $(a);
+        ah.css("display", "block");
+        ah.append("<img src=" + flake_images[i % kFlakeImages].src + " />");
+        ah.addClass("snowflake");
+        $('body').append(ah);
+    }
 
 	// recalculate page dimension every second
 	window.setInterval('get_page_dimension()',1000);
@@ -430,13 +445,15 @@ function startSnow() {
 	// init all objects
 	init_snow_and_santa();
 
+    animate(Date.now());
+
 	// place snowflakes, santa & trees
-	rebuild_speed_and_timer(refresh);
+	//r/ebuild_speed_and_timer(refresh);
 
 	// start the animation
-	timer_id = window.setInterval(move_snow_and_santa,refresh);
-	storm_id = window.setInterval(storm_proc,1800);					// init with visible storm
-	flake_id = window.setInterval(make_flake_visible_proc,2000);	// after the storm, let snowflakes fall :-)
+	//timer_id = window.setInterval(move_snow_and_santa,refresh);
+	//storm_id = window.setInterval(storm_proc,1800);					// init with visible storm
+	//flake_id = window.setInterval(make_flake_visible_proc,2000);	// after the storm, let snowflakes fall :-)
 }
 
 function stopSnow() {
@@ -445,10 +462,8 @@ function stopSnow() {
 
 }
 
-startSnow();
-
-/* file-variable settings for Emacsen editors
-	Local Variables:
-	tab-width: 4
-	End:
- */
+$(document).ready(function() {
+    console.log('ahllo');
+    snowEnabled = -1;
+    startSnow();
+});

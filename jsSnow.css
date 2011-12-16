@@ -4,8 +4,83 @@
 	top: -1px;
 	z-index: 10;
 	display: block;
-	font-size: 8pt;
-	text-shadow: 3px 3px 1px rgba(0, 0, 0, 0.50);
-	font-family: "Arial Unicode MS", "DejaVu Sans", "DejaVu Serif", Helvetica, sans;
 	color: white;
+}
+
+@-webkit-keyframes brotate {
+	0% {
+		-webkit-transform: rotate(0deg);
+		transform: rotate(0deg);
+	}
+	50% {
+		-webkit-transform: rotate(-180deg);
+		transform: rotate(-180deg);
+	}
+	100% {
+		-webkit-transform: rotate(-360deg);
+		transform: rotate(-360deg);
+	}
+}
+
+@-moz-keyframes rotate
+	0% {
+		-moz-transform: rotate(0deg);
+		transform: rotate(0deg);
+	}
+	50% {
+		-moz-transform: rotate(180deg);
+		transform: rotate(180deg);
+	}
+	100% {
+		-moz-transform: rotate(360deg);
+		transform: rotate(360deg);
+	}
+}
+
+@-moz-keyframes brotate
+	0% {
+		-moz-transform: rotate(0deg);
+		transform: rotate(0deg);
+	}
+	50% {
+		-moz-transform: rotate(-180deg);
+		transform: rotate(-180deg);
+	}
+	100% {
+		-moz-transform: rotate(-360deg);
+		transform: rotate(-360deg);
+	}
+}
+
+.snowflake-animation-0 {
+	-webkit-animation: rotate 5s infinite;
+	-moz-animation: rotate 5s infinite
+}
+.snowflake-animation-1 {
+	-webkit-animation: rotate 8s infinite;
+	-moz-animation: rotate 8s infinite
+}
+.snowflake-animation-2 {
+	-webkit-animation: rotate 12s infinite;
+	-moz-animation: rotate 12s infinite
+}
+.snowflake-animation-3 {
+	-webkit-animation: rotate 14s infinite;
+	-moz-animation: rotate 14s infinite
+}
+.snowflake-animation-4 {
+	-webkit-animation: brotate 5s infinite;
+	-moz-animation: brotate 5s infinite
+}
+.snowflake-animation-5 {
+	-webkit-animation: brotate 8s infinite;
+	-moz-animation: brotate 8s infinite
+}
+.snowflake-animation-6 {
+	-webkit-animation: brotate 12s infinite;
+	-moz-animation: brotate 12s infinite
+}
+.snowflake-animation-7 {
+	-webkit-animation: brotate 14s infinite;
+	-moz-animation: brotate 14s infinite
 }

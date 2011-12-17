@@ -36,7 +36,7 @@ var pageHeight = 0;
 
 // <---- Customizable part ----
 var santaImageDir = '//www.roguelazer.com/snow/';
-var santaImageDir = 'file:///Users/jbrown/repos/jssnow/';
+//var santaImageDir = 'file:///Users/jbrown/repos/jssnow/';
 var flakeImageDir = santaImageDir;
 var santaSize  = '2';				   // 1, 2 or 3 (smaller number specifies smaller image)
 

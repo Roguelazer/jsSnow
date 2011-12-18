@@ -41,7 +41,7 @@ var flakeImageDir = santaImageDir;
 var santaSize  = '2';				   // 1, 2 or 3 (smaller number specifies smaller image)
 
 var flakes = 100;						// number of big flakes
-var small_flakes = 400;				 // number of little flakes
+var small_flakes = 200;				 // number of little flake2
 var santa_init_x	 = -256;			// santa's initial X-position
 var santa_appearance = 0.15;			// probability between [0:1] for santa to be shown
 
@@ -182,7 +182,7 @@ function init_flake(i) {
 	if (Math.random() < 0.5) {
 		flakeVX[i]  = -flakeVX[i];
 	}
-	flakeEnabled[i] = 1;
+	flakeEnabled[i] = true;
 }
 
 var animationStartTime = Date.now();
@@ -259,13 +259,8 @@ function animate(time) {
 			if (snowEnabled) {
 				init_flake(i);
 			} else {
-				flakeEnabled[i] = 0;
+				flakeEnabled[i] = false;
 			}
-		}
-		if (!flakeEnabled[i]) {
-			flake[i].hide();
-		} else {
-			flake[i].show();
 		}
 		if (flakeRot[i] !== null) {
 			if (flakeRot[i] <= (time - 40000)) {
@@ -274,8 +269,13 @@ function animate(time) {
 		} else if ((flakeSize[i] >= kMinRotSize) && (Math.random() < rotate_prob)) {
 			startFlakeRotate(i, time);
 		}
-		flake[i].css("left", flakeX[i]+"px");
-		flake[i].css("top", flakeY[i]+"px");
+		if (!flakeEnabled[i]) {
+			flake[i].hide();
+		} else {
+			flake[i].show();
+			flake[i].css("left", flakeX[i]+"px");
+			flake[i].css("top", flakeY[i]+"px");
+		}
 	}
 	// Do santa things
 	if (santaEnabled) {

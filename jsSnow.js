@@ -245,27 +245,31 @@ function animate(time) {
 	// Move all flakes
 	for (var i = 0; i < (flakes+small_flakes); i++) {
 		var fs = flakeSize[i] < 40 ? 40 : flakeSize[i];
-		flakeX[i] += (flakeVX[i]+flakeDX)*time_increment;
-		flakeY[i] += (flakeVY[i]+flakeDY)*time_increment;
-		if (flakeX[i]<fs) {
-			flakeX[i] += pageWidth;
-		}
-		if (flakeX[i]>=(pageWidth-fs)) {
-			flakeX[i] -= pageWidth;
-		}
-		if (flakeY[i]>=(pageHeight-fs)) {
-			if (snowEnabled) {
-				init_flake(i);
-			} else {
-				flakeEnabled[i] = false;
+		if ((!snowEnabled) && ((flakeX[i] < 0) || (flakeY[i] < 0))) {
+			flakeEnabled[i] = false;
+		} else {
+			flakeX[i] += (flakeVX[i]+flakeDX)*time_increment;
+			flakeY[i] += (flakeVY[i]+flakeDY)*time_increment;
+			if (flakeX[i]<fs) {
+				flakeX[i] += pageWidth;
 			}
-		}
-		if (flakeRot[i] !== null) {
-			if (flakeRot[i] <= (time - 40000)) {
-				stopFlakeRotate(i);
+			if (flakeX[i]>=(pageWidth-fs)) {
+				flakeX[i] -= pageWidth;
 			}
-		} else if ((flakeSize[i] >= kMinRotSize) && (Math.random() < rotate_prob)) {
-			startFlakeRotate(i, time);
+			if (flakeY[i]>=(pageHeight-fs)) {
+				if (snowEnabled) {
+					init_flake(i);
+				} else {
+					flakeEnabled[i] = false;
+				}
+			}
+			if (flakeRot[i] !== null) {
+				if (flakeRot[i] <= (time - 40000)) {
+					stopFlakeRotate(i);
+				}
+			} else if ((flakeSize[i] >= kMinRotSize) && (Math.random() < rotate_prob)) {
+				startFlakeRotate(i, time);
+			}
 		}
 		if (!flakeEnabled[i]) {
 			flake[i].hide();
@@ -317,6 +321,9 @@ function get_page_dimension() {
 function startSnow() {
 	if (snowEnabled !== -1) {
 		snowEnabled = 1;
+		for (var i = 0; i < (flakes+small_flakes); i++) {
+			flakeEnabled[i] = true;
+		}
 		return;
 	}
 	snowEnabled = 1;

@@ -1,12 +1,9 @@
-//---------------------------------------------------------------------------------------
-// XSnow for JavaScript - von Mag. Dr. Nikolaus Klepp - dr.klepp@gmx.at - www.klepp.info
-//---------------------------------------------------------------------------------------
 /*  jsSnow
-	Copyright (C) 2002 Mag. Dr. Nikolaus Klepp <dr.klepp@gmx.at>
+	Copyright (C) 2002 Mag. Dr. Nikolaus Klepp <dr.klepp@gmx.at> as XSnow for JavaScript
 	Copyright (C) 2002 INOUE Hiroyuki <dombly@kc4.so-net.ne.jp>
 	Copyright (C) 2002 Heiko Feldker <hfeldker@web.de>
-	Copyright (C) 2010-2010 James Brown <roguelazer@roguelazer.com>
-	Release Id: 0.5
+	Copyright (C) 2010-2012 James Brown <roguelazer@roguelazer.com>
+	Release Id: 0.7
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -40,7 +37,7 @@ var santaImageDir = '//www.roguelazer.com/snow/';
 var flakeImageDir = santaImageDir;
 var santaSize  = '2';				   // 1, 2 or 3 (smaller number specifies smaller image)
 
-var flakes = 100;						// number of big flakes
+var flakes = 50;						// number of big flakes
 var small_flakes = 200;				 // number of little flake2
 var santa_init_x	 = -256;			// santa's initial X-position
 var santa_appearance = 0.15;			// probability between [0:1] for santa to be shown
@@ -207,10 +204,11 @@ function stopFlakeRotate(i) {
 var frameCount = 0;
 
 function animate(time) {
+	var time = Date.now();
 	var time_increment = time - animationStartTime;
 	frameCount = (frameCount + 1) % 100;
 	// Do some tasks fairly rarely
-	if (frameCount % 20 == 0) {
+	if (frameCount % 60 == 0) {
 		// sometimes, make flakes move differently
 		for (var i = 0 ; i < (flakes+small_flakes); ++i) {
 			if (Math.random() < vchange_prob) {
@@ -273,8 +271,7 @@ function animate(time) {
 			flake[i].hide();
 		} else {
 			flake[i].show();
-			flake[i].css("left", flakeX[i]+"px");
-			flake[i].css("top", flakeY[i]+"px");
+			flake[i].css({"left": flakeX[i]+"px", "top": flakeY[i]+"px"});
 		}
 	}
 	// Do santa things
@@ -366,7 +363,8 @@ function startSnow() {
 	// init all objects
 	init_snow_and_santa();
 
-	animate(Date.now());
+	animationStartTime = Date.now();
+	animate();
 
 	// place snowflakes, santa & trees
 	//r/ebuild_speed_and_timer(refresh);
@@ -384,7 +382,6 @@ function stopSnow() {
 }
 
 $(document).ready(function() {
-	console.log('ahllo');
 	snowEnabled = -1;
 	startSnow();
 });

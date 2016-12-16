@@ -209,7 +209,7 @@ function preloadImage(source) {
     var im =document.createElement("img");
     im.class = "snowPreloadImage";
     im.src = baseImageDir + source;
-    im.style = "display: none";
+    im.style.cssText = "display: none";
     document.body.appendChild(im);
     return im;
 }
@@ -226,7 +226,7 @@ function startSnow() {
     the_canvas.id = "snowCanvas";
     the_canvas.width = pageWidth;
     the_canvas.height = pageHeight;
-    the_canvas.style = "position: absolute; top: 0; left: 0; pointer-events: none;";
+    the_canvas.style.cssText = "position: fixed; top: 0; left: 0; pointer-events: none;";
     document.body.appendChild(the_canvas);
 
     snowImages = [];

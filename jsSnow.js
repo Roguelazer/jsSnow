@@ -20,6 +20,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+/* jshint esversion: 6, undef: true, unused: true, browser: true */
+
 var pageWidth = 0;
 var pageHeight = 0;
 var the_canvas = null;
@@ -56,13 +58,11 @@ var Santa = function() {
     this.y = Math.random() * pageHeight;
     this.vx = Math.random() * 50;
     this.vy = Math.random() * 1 - 0.5;
-    console.log("Santa Claus is coming to town!");
 };
 Santa.prototype.move = function(duration) {
     this.x += (this.vx + storm_vx) * duration;
     this.y += (this.vy + storm_vy) * duration;
     if (this.x > pageWidth) {
-        console.log("Santa has left the building");
         santa = null;
     }
 };
@@ -91,12 +91,10 @@ var Flake = function (is_small) {
     } else {
         this.image = snowImages[Math.floor(Math.random() * snowImages.length)];
     }
-    this.width = this.image.width;
-    this.height = this.image.height;
     this.x = Math.random() * pageWidth;
-    this.y = Math.random() * pageHeight / -4.0;
+    this.y = Math.random() * pageHeight / -10.0;
     this.init_speed();
-    this.max_vy = 15.0;
+    this.max_vy = 20.0;
     this.max_vx = 2.0;
     this.min_vy = 0.001;
     this.angle = 0;
@@ -107,7 +105,7 @@ var Flake = function (is_small) {
 };
 Flake.prototype.init_speed = function() {
     this.vx = Math.random() * 2.0 - 1.0;
-    this.vy = Math.random() * 15.0;
+    this.vy = Math.random() * 20.0;
 };
 Flake.prototype.move = function(duration) {
     this.x = this.x + (this.vx + storm_vx) * duration;
@@ -144,7 +142,7 @@ Flake.prototype.draw = function(ctx) {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
     }
-    ctx.drawImage(this.image, 0, 0, this.width, this.height);
+    ctx.drawImage(this.image, 0, 0);
     if (this.angle !== 0) {
         ctx.rotate(-this.angle);
         ctx.translate(-this.x, -this.y);
@@ -171,7 +169,7 @@ function animate() {
     var now = new Date().getTime();
     var now_seconds = Math.round(now / 1000);
     var duration_ms = now - last_anim;
-    var duration = (now - last_anim) / 1000.0;
+    var duration = duration_ms / 1000.0;
     if ((storm_since === 0) && (now_seconds % storm_secs === 0)) {
         start_storm(now_seconds);
     } else if ((storm_since !== 0) && (now_seconds - storm_since > storm_dur)) {
@@ -179,8 +177,7 @@ function animate() {
     }
     var ctx = the_canvas.getContext("2d");
     ctx.clearRect(0, 0, pageWidth, pageHeight);
-    for (var flake_idx in flakes) {
-        var flake = flakes[flake_idx];
+    for (let flake of flakes) {
         flake.draw(ctx);
         flake.move(duration);
         if (Math.random() < vChangeProb / duration_ms) {
@@ -236,30 +233,29 @@ function startSnow() {
     smallSnowImages = [];
     flakes = [];
     
-    var i;
-
     // Pre-draw all the images
-    for (i in snowImageSources) {
-        snowImages.push(preloadImage(snowImageSources[i]));
+    for (let source of snowImageSources) {
+        snowImages.push(preloadImage(source));
     }
-    for (i in smallSnowImageSources) {
-        smallSnowImages.push(preloadImage(smallSnowImageSources[i]));
+    for (let source of smallSnowImageSources) {
+        smallSnowImages.push(preloadImage(source));
     }
     santaImage = preloadImage(santaImageSource);
 
-    for (i = 0; i < numFlakes ; ++i) {
+    for (let i = 0; i < numFlakes ; ++i) {
         flakes.push(new Flake(false));
     }
 
-    for (i = 0; i < numSmallFlakes ; ++i) {
+    for (let i = 0; i < numSmallFlakes ; ++i) {
         flakes.push(new Flake(true));
     }
 
     last_anim = new Date().getTime();
 
-    window.requestAnimationFrame(animate);
+    animate();
 }
 
+/*
 function stopSnow() {
     var elem = document.getElementById("snowCanvas");
     if (elem !== undefined) {
@@ -271,5 +267,6 @@ function stopSnow() {
     }
     snow_running = false;
 }
+*/
 
 startSnow();

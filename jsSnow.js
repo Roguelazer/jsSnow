@@ -25,16 +25,16 @@
 var pageWidth = 0;
 var pageHeight = 0;
 var the_canvas = null;
-var numFlakes = 20;
-var numSmallFlakes = 80;
+var numFlakes = 30;
+var numSmallFlakes = 90;
 var vChangeProb = 0.01;
 var vxChangePct = 0.05;
 var vyChangePct = 0.0005;
-var santaProb = 0.1;
+var santaProb = 0.05;
 
 var storm_since = 0;
 var storm_dur = 1;
-var storm_secs = 30;
+var storm_secs = 60;
 var storm_vx = 0;
 var storm_vy = 0;
 
@@ -91,28 +91,31 @@ var Flake = function (is_small) {
     } else {
         this.image = snowImages[Math.floor(Math.random() * snowImages.length)];
     }
-    this.x = Math.random() * pageWidth;
-    this.y = Math.random() * pageHeight / -10.0;
-    this.init_speed();
     this.max_vy = 20.0;
     this.max_vx = 2.0;
     this.min_vy = 1.0;
+    this.is_small = is_small;
+    this.init_location();
+    this.init_speed();
+};
+Flake.prototype.init_location = function() {
+    this.x = Math.random() * pageWidth;
+    this.y = Math.random() * pageHeight / -10.0;
     this.angle = 0;
-    if (!is_small) {
-        this.vT = Math.random() - 0.5;
-        this.vT /= 40;
-    }
 };
 Flake.prototype.init_speed = function() {
     this.vx = Math.random() * 2.0 - 1.0;
     this.vy = Math.random() * 20.0;
+    if (!this.is_small) {
+        this.vT = Math.random() - 0.5;
+        this.vT /= 40;
+    }
 };
 Flake.prototype.move = function(duration) {
     this.x = this.x + (this.vx + storm_vx) * duration;
     this.y = this.y + (this.vy + storm_vy) * duration;
     if (this.y > pageHeight) {
-        this.y = 0;
-        this.x = Math.random() * pageWidth;
+        this.init_location();
         this.init_speed();
     }
     if (this.vT !== 0) {
@@ -181,13 +184,13 @@ function animate() {
         flake.draw(ctx);
         flake.move(duration);
     }
-    if (Math.random() < vChangeProb / duration_ms) {
+    if (Math.random() < (vChangeProb * duration)) {
         flakes[Math.floor(Math.random() * flakes.length)].tweak_speed();
     }
     if (santa !== null) {
         santa.draw(ctx);
         santa.move(duration);
-    } else if (Math.random() < santaProb / duration_ms) {
+    } else if (Math.random() < (santaProb * duration)) {
         santa = new Santa();
     }
     last_anim = new Date().getTime();

@@ -1,396 +1,275 @@
-/*  jsSnow
-	Copyright (C) 2002 Mag. Dr. Nikolaus Klepp <dr.klepp@gmx.at> as XSnow for JavaScript
-	Copyright (C) 2002 INOUE Hiroyuki <dombly@kc4.so-net.ne.jp>
-	Copyright (C) 2002 Heiko Feldker <hfeldker@web.de>
-	Copyright (C) 2010-2012 James Brown <roguelazer@roguelazer.com>
-	Release Id: 0.7
+/** 
+ * jsSnow.js -- xsnow in your browser.
+ *
+ * Original inspiration from http://freshmeat.net/projects/jssnow/
+ *
+ * Copyright (C) 2010-2016 James Brown <roguelazer@gmail.com>
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*/
-//---------------------------------------------------------------------------------------
-
-var undefined;
-
-if (snowEnabled === undefined) {
-
-window.onerror = null;
-
-var pageWidth  = 0;						// page dimension & visible offset
+var pageWidth = 0;
 var pageHeight = 0;
+var the_canvas = null;
+var numFlakes = 20;
+var numSmallFlakes = 80;
+var vChangeProb = 0.01;
+var vxChangePct = 0.05;
+var vyChangePct = 0.05;
+var santaProb = 0.1;
 
+var storm_since = 0;
+var storm_dur = 1;
+var storm_secs = 30;
+var storm_vx = 0;
+var storm_vy = 0;
 
-// <---- Customizable part ----
-var santaImageDir = '//www.roguelazer.com/snow/';
-//var santaImageDir = 'file:///Users/jbrown/repos/jssnow/';
-var flakeImageDir = santaImageDir;
-var santaSize  = '2';				   // 1, 2 or 3 (smaller number specifies smaller image)
+var snow_running = false;
 
-var flakes = 50;						// number of big flakes
-var small_flakes = 200;				 // number of little flake2
-var santa_init_x	 = -256;			// santa's initial X-position
-var santa_appearance = 0.15;			// probability between [0:1] for santa to be shown
+var baseImageDir = 'https://www.roguelazer.com/snow/';
+var snowImageSources = ["snow1_16.png", "snow2_16.png", "snow3_16.png"];
+var smallSnowImageSources = ["small_snow_2.png", "small_snow_4.png"];
+var santaImageSource = "sleigh2.gif";
 
-var santa_width = 112;
-var santa_height = 16;
-var santa_speed = 0.15;
+var snowImages = [];
+var smallSnowImages = [];
+var santaImage = null;
+var last_anim = 0;
 
-var stormEnabled = 0;
+var flakes = [];
+var santa = null;
 
-var rotate_prob	   = 0.50;		   // probability of a big flake rotating
-var vchange_prob	  = 0.005;		  // probability of changing X velocity
+var Santa = function() {
+    this.x = -10;
+    this.y = Math.random() * pageHeight;
+    this.vx = Math.random() * 50;
+    this.vy = Math.random() * 1 - 0.5;
+    console.log("Santa Claus is coming to town!");
+};
+Santa.prototype.move = function(duration) {
+    this.x += (this.vx + storm_vx) * duration;
+    this.y += (this.vy + storm_vy) * duration;
+    if (this.x > pageWidth) {
+        console.log("Santa has left the building");
+        santa = null;
+    }
+};
+Santa.prototype.draw = function(ctx) {
+    ctx.drawImage(santaImage, this.x, this.y);
+};
 
-
-var vspeed			= 0.02;
-var hspeed			= 0.03;
-
-// ---- Customizable part ---->
-
-var santa;
-var santaEnabled = 0;
-var santaX	= 0;			// X-position of santa
-var santaY	= 0;			// Y-position of santa
-var santaDX = 0;
-var santaDY = 0;
-
-var flake	= new Array(flakes+small_flakes);
-var flakeImg = new Array(flakes+small_flakes);
-var flakeSize= new Array(flakes+small_flakes);
-var flakeRot = new Array(flakes+small_flakes);
-var flakeX   = new Array(flakes+small_flakes);
-var flakeY   = new Array(flakes+small_flakes);
-var flakeVX  = new Array(flakes+small_flakes);
-var flakeVY	 = new Array(flakes+small_flakes);
-var flakeVIS = new Array(flakes+small_flakes);
-var flakeEnabled = new Array(flakes+small_flakes);
-var flakeDX  = 0;			// X-movement in pixel/frame, caused by storm
-var flakeDY  = 0;			// Y-movement in pixel/frame, caused by storm
-
-
-
-var timer_id	= 0;		// ID if timer proc.
-var timer_count = 1;		// --''--
-
-var flake_visible = 0;		// start with visble flakes for Opera, all others start invisible
-var flake_id	  = 0;		// timer id of make_flake_visible
-
-var scrollbarWidth = 20; 	// too lazy to actually determine this
-
-var snowEnabled = -1;
-
-var kMaxFlakeSize=16;
-var kMinRotSize=12;
-var kMinSmallFlakeSize=2;
-var kMaxSmallFlakeSize=4;
-
-window.requestAnimFrame = (function(){
-	  return window.requestAnimationFrame       || 
-			 window.webkitRequestAnimationFrame || 
-			 window.mozRequestAnimationFrame    || 
-			 window.oRequestAnimationFrame      || 
-			 window.msRequestAnimationFrame     || 
-			 function( callback ) { window.setTimeout(callback, 1000 / 60); };
-})();
-
-//-------------------------------------------------------------------------
-// preload images
-//-------------------------------------------------------------------------
-var kFlakeImages = 3;
-var flake_images = new Array(kFlakeImages);
-for (var i = 0; i < kFlakeImages; ++i) {
-	flake_images[i] = new Image();
-	flake_images[i].src = flakeImageDir+'snow'+((i+1).toString())+'.png';
-}
-small_flake_2 = new Image();
-small_flake_2.src = flakeImageDir+'small_snow_2.png';
-small_flake_4 = new Image();
-small_flake_4.src = flakeImageDir+'small_snow_4.png';
-var santa_image = new Image();
-santa_image.src = santaImageDir+'sleigh'+santaSize+'.gif';
-
-
-var kRotateStyles = 5;
-
-//-------------------------------------------------------------------------
-// create all layers & Objects
-//-------------------------------------------------------------------------
-function init_snow_and_santa() {
-	// create santa
-	santa   = $('#santa0');
-	santaX  = santa_init_x;
-	santaY  = Math.random()*pageHeight;
-
-	santa.css("z-index", kMaxFlakeSize - 2);
-
-	// create flake
-	for (var i=0; i<flakes; i++) {
-		flake[i]	= $("#flake"+(i.toString()));
-		flakeImg[i] = $("#flake"+(i.toString())+" img");
-		flakeSize[i] = Math.floor(kMaxFlakeSize - Math.random()*(kMaxFlakeSize*0.75));
-		flake[i].css("z-index", flakeSize[i]);
-		flake[i].width(flakeSize[i] + "px");
-		flake[i].height(flakeSize[i] + "px");
-		flakeImg[i].width(flakeSize[i] + "px");
-		flakeImg[i].height(flakeSize[i] + "px");
-		if (flakeSize[i] >= kMinRotSize) {
-			var rot_class = "snowflake-animation-" + Math.floor(Math.random()*kRotateStyles).toString();
-			flake[i].addClass(rot_class);
-		}
-		init_flake(i);
-		flakeVIS[i] = flake_visible;
-		flakeRot[i]	 = null;
-	}
-	for (var i=flakes; i<(flakes+small_flakes); ++i) {
-		flake[i]	= $("#flake"+(i.toString()));
-		flakeImg[i] = $("#flake"+(i.toString())+" img");
-		if (Math.random() < 0.1) {
-			flakeImg[i].attr("src", small_flake_4.src);
-			flakeSize[i] = kMaxSmallFlakeSize;
-		} else {
-			flakeImg[i].attr("src", small_flake_2.src);
-			flakeSize[i] = kMinSmallFlakeSize;
-		}
-		flake[i].css("z-index", flakeSize[i]);
-		flakeImg[i].width(flakeSize[i] + "px");
-		flakeImg[i].height(flakeSize[i] + "px");
-		init_flake(i);
-		flake[i].addClass("snowflake-small-animation");
-		flakeVIS[i] = flake_visible;
-		flakeRot[i]	 = null;
-	}
+function start_storm(now_seconds) {
+    var storm_vx_direction = (now_seconds % 4 === 0) ? 1 : -1;
+    var storm_vy_direction = (now_seconds % 5 === 0) ? 1 : 0;
+    storm_dur = Math.random() * 2 + 3;
+    storm_vx = ((Math.random() * 20) + 10) * storm_vx_direction;
+    storm_vy = Math.random() * 4 * storm_vy_direction;
+    storm_since = now_seconds;
 }
 
-function init_flake(i) {
-	flakeX[i]	   = Math.random()*pageWidth;
-	flakeY[i]	   = Math.random()*pageHeight - pageHeight;
-	flakeVY[i]	  = (Math.random()*0.1 + 0.9)*(flakeSize[i]/kMaxFlakeSize)*vspeed+vspeed;
-	flakeVX[i]	  = (Math.random()*0.1 + 0.9)*(flakeSize[i]/kMaxFlakeSize)*hspeed;
-	if (Math.random() < 0.5) {
-		flakeVX[i]  = -flakeVX[i];
-	}
-	flakeEnabled[i] = true;
+function end_storm() {
+    storm_vx = 0;
+    storm_vy = 0;
+    storm_since = 0;
 }
 
-var animationStartTime = Date.now();
+var Flake = function (is_small) {
+    if (is_small) {
+        this.image = smallSnowImages[Math.floor(Math.random() * smallSnowImages.length)];
+    } else {
+        this.image = snowImages[Math.floor(Math.random() * snowImages.length)];
+    }
+    this.width = this.image.width;
+    this.height = this.image.height;
+    this.x = Math.random() * pageWidth;
+    this.y = Math.random() * pageHeight / -4.0;
+    this.init_speed();
+    this.max_vy = 15.0;
+    this.max_vx = 2.0;
+    this.min_vy = 0.001;
+    this.angle = 0;
+    if (!is_small) {
+        this.vT = Math.random() - 0.5;
+        this.vT /= 40;
+    }
+};
+Flake.prototype.init_speed = function() {
+    this.vx = Math.random() * 2.0 - 1.0;
+    this.vy = Math.random() * 15.0;
+};
+Flake.prototype.move = function(duration) {
+    this.x = this.x + (this.vx + storm_vx) * duration;
+    this.y = this.y + (this.vy + storm_vy) * duration;
+    if (this.y > pageHeight) {
+        this.y = 0;
+        this.x = Math.random() * pageWidth;
+        this.init_speed();
+    }
+    if (this.vT !== 0) {
+        this.angle = (this.angle + this.vT) % (Math.PI * 2);
+    }
+    if (this.x < 0) {
+        this.x = pageWidth;
+        /*this.x = 0;
+        this.vx *= -1;
+        this.vT *= -1;*/
+    }
+    if (this.x > pageWidth) {
+        this.x = 0;
+        /*
+        this.x = pageWidth;
+        this.vx *= -1;
+        this.vT *= -1;
+        */
+    }
+};
 
-function startFlakeRotate(i, time) {
-	if (flakeVX[i] <= 0) {
-		flake[i].addClass("startRotate-2");
-	} else {
-		flake[i].addClass("startRotate");
-	}
-	flake[i].removeClass("endRotate");
-	flakeRot[i] = time;
+Flake.prototype.draw = function(ctx) {
+    if ((this.x < 0) || (this.y < 0)) {
+        return;
+    }
+    if (this.angle !== 0) {
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+    }
+    ctx.drawImage(this.image, 0, 0, this.width, this.height);
+    if (this.angle !== 0) {
+        ctx.rotate(-this.angle);
+        ctx.translate(-this.x, -this.y);
+    }
+};
+
+Flake.prototype.tweak_speed = function() {
+    var vx_change = ( (1.0 - vxChangePct) + Math.random() * (vxChangePct * 2));
+    var vy_change = ( (1.0 - vyChangePct) + Math.random() * (vyChangePct * 2));
+    this.vx *= vx_change;
+    this.vy *= vy_change;
+    if (this.vx >= this.max_vx) {
+        this.vx = this.max_vx;
+    }
+    if (this.vy >= this.max_vy) {
+        this.vy = this.max_vy;
+    }
+    if (this.vy < this.min_vy) {
+        this.vy = this.min_vy;
+    }
+};
+
+function animate() {
+    var now = new Date().getTime();
+    var now_seconds = Math.round(now / 1000);
+    var duration_ms = now - last_anim;
+    var duration = (now - last_anim) / 1000.0;
+    if ((storm_since === 0) && (now_seconds % storm_secs === 0)) {
+        start_storm(now_seconds);
+    } else if ((storm_since !== 0) && (now_seconds - storm_since > storm_dur)) {
+        end_storm();
+    }
+    var ctx = the_canvas.getContext("2d");
+    ctx.clearRect(0, 0, pageWidth, pageHeight);
+    for (var flake_idx in flakes) {
+        var flake = flakes[flake_idx];
+        flake.draw(ctx);
+        flake.move(duration);
+        if (Math.random() < vChangeProb / duration_ms) {
+            flake.tweak_speed();
+        }
+    }
+    if (santa !== null) {
+        santa.draw(ctx);
+        santa.move(duration);
+    } else if (Math.random() < santaProb / duration_ms) {
+        santa = new Santa();
+    }
+    last_anim = new Date().getTime();
+    if (snow_running) {
+        window.requestAnimationFrame(animate);
+    }
 }
 
-function stopFlakeRotate(i) {
-	flake[i].removeClass("startRotate");
-	flake[i].removeClass("startRotate-2");
-	flake[i].addClass("endRotate");
-	flakeRot[i] = null;
-}
-
-var frameCount = 0;
-
-function animate(time) {
-	var time = Date.now();
-	var time_increment = time - animationStartTime;
-	frameCount = (frameCount + 1) % 100;
-	// Do some tasks fairly rarely
-	if (frameCount % 60 == 0) {
-		// sometimes, make flakes move differently
-		for (var i = 0 ; i < (flakes+small_flakes); ++i) {
-			if (Math.random() < vchange_prob) {
-				flakeVX[i] = (Math.random()*0.1 + 0.9)*(flakeSize[i]/kMaxFlakeSize)*hspeed;
-				if (Math.random() < 0.5) {
-					flakeVX[i] *= -1;
-				}
-			}
-		}
-		// Do I want to turn on a storm?
-		var storm_val = Math.floor(Date.now() / 100000) % 60 + (Math.floor(Date.now() / 8000) % 40);
-		if (stormEnabled) {
-			if (storm_val != 53) { // Do I want to turn off a storm?
-				console.log("storm off");
-				flakeDX = 0;
-				flakeDY = 0;
-				stormEnabled = false;
-			}
-		} else {
-			if (storm_val == 53) { // Do I want to turn on a storm?
-				console.log("storm on");
-				flakeDX = (time/10000 % 100) / 50;
-				flakeDY = (time/10000 % 100) / 500;
-				if (Math.random() < 0.5) {
-					flakeDX = -flakeDX;
-				}
-				if (Math.random() < 0.2) {
-					flakeDY = -flakeDY;
-				}
-				stormEnabled = true;
-			}
-		}
-	}
-	// Move all flakes
-	for (var i = 0; i < (flakes+small_flakes); i++) {
-		var fs = flakeSize[i] < 40 ? 40 : flakeSize[i];
-		if ((!snowEnabled) && ((flakeX[i] < 0) || (flakeY[i] < 0))) {
-			flakeEnabled[i] = false;
-		} else {
-			flakeX[i] += (flakeVX[i]+flakeDX)*time_increment;
-			flakeY[i] += (flakeVY[i]+flakeDY)*time_increment;
-			if (flakeX[i]<fs) {
-				flakeX[i] += pageWidth;
-			}
-			if (flakeX[i]>=(pageWidth-fs)) {
-				flakeX[i] -= pageWidth;
-			}
-			if (flakeY[i]>=(pageHeight-fs)) {
-				if (snowEnabled) {
-					init_flake(i);
-				} else {
-					flakeEnabled[i] = false;
-				}
-			}
-			if (flakeRot[i] !== null) {
-				if (flakeRot[i] <= (time - 40000)) {
-					stopFlakeRotate(i);
-				}
-			} else if ((flakeSize[i] >= kMinRotSize) && (Math.random() < rotate_prob)) {
-				startFlakeRotate(i, time);
-			}
-		}
-		if (!flakeEnabled[i]) {
-			flake[i].hide();
-		} else {
-			flake[i].show();
-			flake[i].css({"left": flakeX[i]+"px", "top": flakeY[i]+"px"});
-		}
-	}
-	// Do santa things
-	if (santaEnabled) {
-		if ((santaX>=(pageWidth-santa_width)) || (santaY >= pageHeight - santa_height)) {
-			santaEnabled = 0;
-			santaX = santa_init_x;
-			santaY = Math.random()*pageHeight;
-		} else {
-			santaX += santaDX*time_increment;
-			santaY += santaDY*time_increment;
-		}
-		santa.css("left", santaX);
-		santa.css("top", santaY);
-	} else {
-		santa.hide();
-		if (Math.random() < santa_appearance) {
-			santaEnabled = 1;
-			santaDX = santa_speed + (Math.random()*0.25*santa_speed - 0.25*santa_speed);
-			santaDX = 0.25*santa_speed + (Math.random()*0.1*santa_speed - 0.1*santa_speed);
-			santa.show()
-		}
-	}
-	animationStartTime = Date.now();
-	requestAnimFrame(animate);
-}
-
-
-//-------------------------------------------------------------------------
-// size of page
-//-------------------------------------------------------------------------
 function get_page_dimension() {
-	console.log("Getting page dimensions");
-	pageWidth  = $(window).width();
-	pageHeight = $(window).height();
-	console.log(pageWidth + "x" + pageHeight);
+    pageWidth  = window.innerWidth;
+    pageHeight = window.innerHeight;
+    if (the_canvas !== null) {
+        the_canvas.width = pageWidth;
+        the_canvas.height = pageHeight;
+    }
 }
 
+function preloadImage(source) {
+    var im =document.createElement("img");
+    im.class = "snowPreloadImage";
+    im.src = baseImageDir + source;
+    im.style = "display: none";
+    document.body.appendChild(im);
+    return im;
+}
 
-//-------------------------------------------------------------------------
-// initialize all objects & timer
-//-------------------------------------------------------------------------
 function startSnow() {
-	if (snowEnabled !== -1) {
-		snowEnabled = 1;
-		for (var i = 0; i < (flakes+small_flakes); i++) {
-			flakeEnabled[i] = true;
-		}
-		return;
-	}
-	snowEnabled = 1;
-	sty = document.createElement("link");
-	sty.href=flakeImageDir+'jsSnow.css';
-	sty.type="text/css";
-	sty.rel="StyleSheet";
-	document.getElementsByTagName('head')[0].appendChild(sty);
-	a = document.createElement("div");
-	a.id = "santa0";
-	a.style.position = "absolute";
-	a.style.left = "-1px";
-	a.style.top = "-1px";
-	a.style.display = "block";
-	im = document.createElement("img");
-	im.src=santa_image.src;
-	a.appendChild(im);
-	document.body.appendChild(a);
+    if (snow_running) {
+        return;
+    }
+    snow_running = true;
+    get_page_dimension();
+    window.addEventListener("resize", get_page_dimension);
 
-	// each snowflake's private layer
-	for (var i=0; i<flakes; i++) {
-		a = document.createElement("div");
-		a.id = "flake" + i;
-		ah = $(a);
-		ah.css("display", "block");
-		ah.append("<img src=" + flake_images[i % kFlakeImages].src + " />");
-		ah.addClass("snowflake");
-		aih = $(ah.children()[0]);
-		$('body').append(ah);
-	}
-	for (var i = 0; i < small_flakes; i++) {
-		a = document.createElement("div");
-		a.id = "flake" + (flakes + i);
-		ah = $(a);
-		ah.css("display", "block");
-		ah.append("<img src=" + small_flake_4.src + " />");
-		ah.addClass("snowflake");
-		$('body').append(ah);
-	}
+    the_canvas = document.createElement("canvas");
+    the_canvas.id = "snowCanvas";
+    the_canvas.width = pageWidth;
+    the_canvas.height = pageHeight;
+    the_canvas.style = "position: absolute; top: 0; left: 0; pointer-events: none;";
+    document.body.appendChild(the_canvas);
 
-	get_page_dimension();
-	$(window).resize(get_page_dimension);
+    snowImages = [];
+    smallSnowImages = [];
+    flakes = [];
+    
+    var i;
 
-	// init all objects
-	init_snow_and_santa();
+    // Pre-draw all the images
+    for (i in snowImageSources) {
+        snowImages.push(preloadImage(snowImageSources[i]));
+    }
+    for (i in smallSnowImageSources) {
+        smallSnowImages.push(preloadImage(smallSnowImageSources[i]));
+    }
+    santaImage = preloadImage(santaImageSource);
 
-	animationStartTime = Date.now();
-	animate();
+    for (i = 0; i < numFlakes ; ++i) {
+        flakes.push(new Flake(false));
+    }
 
-	// place snowflakes, santa & trees
-	//r/ebuild_speed_and_timer(refresh);
+    for (i = 0; i < numSmallFlakes ; ++i) {
+        flakes.push(new Flake(true));
+    }
 
-	// start the animation
-	//timer_id = window.setInterval(move_snow_and_santa,refresh);
-	//storm_id = window.setInterval(storm_proc,1800);					// init with visible storm
-	//flake_id = window.setInterval(make_flake_visible_proc,2000);	// after the storm, let snowflakes fall :-)
+    last_anim = new Date().getTime();
+
+    window.requestAnimationFrame(animate);
 }
 
 function stopSnow() {
-	snowEnabled = 0;
+    var elem = document.getElementById("snowCanvas");
+    if (elem !== undefined) {
+        document.body.removeChild(elem);
+    }
+    var preloaded = document.getElementsByClassName("snowPreloadImage");
+    for (var idx in preloaded) {
+        document.body.removeChild(preloaded[idx]);
+    }
+    snow_running = false;
 }
 
-}
-
-$(document).ready(function() {
-	snowEnabled = -1;
-	startSnow();
-});
-
-// vim: set noexpandtab ts=4 sw=4 sts=0:
+startSnow();

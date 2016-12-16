@@ -29,7 +29,7 @@ var numFlakes = 20;
 var numSmallFlakes = 80;
 var vChangeProb = 0.01;
 var vxChangePct = 0.05;
-var vyChangePct = 0.05;
+var vyChangePct = 0.0005;
 var santaProb = 0.1;
 
 var storm_since = 0;
@@ -74,7 +74,7 @@ function start_storm(now_seconds) {
     var storm_vx_direction = (now_seconds % 4 === 0) ? 1 : -1;
     var storm_vy_direction = (now_seconds % 5 === 0) ? 1 : 0;
     storm_dur = Math.random() * 2 + 3;
-    storm_vx = ((Math.random() * 20) + 10) * storm_vx_direction;
+    storm_vx = ((Math.random() * 40) + 10) * storm_vx_direction;
     storm_vy = Math.random() * 4 * storm_vy_direction;
     storm_since = now_seconds;
 }
@@ -96,7 +96,7 @@ var Flake = function (is_small) {
     this.init_speed();
     this.max_vy = 20.0;
     this.max_vx = 2.0;
-    this.min_vy = 0.001;
+    this.min_vy = 1.0;
     this.angle = 0;
     if (!is_small) {
         this.vT = Math.random() - 0.5;
@@ -180,9 +180,9 @@ function animate() {
     for (let flake of flakes) {
         flake.draw(ctx);
         flake.move(duration);
-        if (Math.random() < vChangeProb / duration_ms) {
-            flake.tweak_speed();
-        }
+    }
+    if (Math.random() < vChangeProb / duration_ms) {
+        flakes[Math.floor(Math.random() * flakes.length)].tweak_speed();
     }
     if (santa !== null) {
         santa.draw(ctx);
